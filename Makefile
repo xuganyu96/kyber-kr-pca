@@ -10,8 +10,19 @@ NISTFLAGS += -Wno-unused-result -O3 -fomit-frame-pointer
 SOURCES = $(KYBERSOURCESKECCAK)
 HEADERS = $(KYBERHEADERSKECCAK)
 
-main: main.c
+.PHONY: main test
+
+main: $(SOURCES) $(HEADERS) main.c
 	$(CC) $(CFLAGS) $(LDFLAGS) $(SOURCES) main.c -o $@
+	./main
+
+test: tests/sanity
+	./tests/sanity
+
+
+tests/sanity: $(SOURCES) $(HEADERS) tests/sanity.c
+	$(CC) $(CFLAGS) $(LDLAGS) $(SOURCES) tests/sanity.c -o $@
 
 clean:
 	$(RM) main
+	$(RM) tests/sanity
