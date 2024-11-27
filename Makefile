@@ -7,8 +7,8 @@ CFLAGS += -Wall -Wextra -Wpedantic -Wmissing-prototypes -Wredundant-decls \
   -Wshadow -Wpointer-arith -O3 -fomit-frame-pointer -Wno-incompatible-pointer-types
 NISTFLAGS += -Wno-unused-result -O3 -fomit-frame-pointer
 
-SOURCES = $(KYBERSOURCESKECCAK)
-HEADERS = $(KYBERHEADERSKECCAK)
+SOURCES = $(KYBERSOURCESKECCAK) utils.c attack.c
+HEADERS = $(KYBERHEADERSKECCAK) utils.h attack.h
 
 .PHONY: main test
 

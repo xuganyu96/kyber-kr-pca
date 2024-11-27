@@ -1,8 +1,14 @@
+#include "../attack.h"
 #include "../kyber/ref/indcpa.h"
 #include "../kyber/ref/params.h"
+#include "../kyber/ref/randombytes.h"
+#include "../utils.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
+
+#define NTESTS 100
 
 /**
  * generate a keypair (pk, sk) such that the first coefficient of the first
@@ -12,7 +18,6 @@
 static int probe_single_secret_coefficient(void) {
   uint8_t pk[KYBER_INDCPA_PUBLICKEYBYTES];
   uint8_t sk[KYBER_INDCPA_SECRETKEYBYTES];
-  uint8_t pt[KYBER_INDCPA_MSGBYTES];
   uint8_t decryption[KYBER_INDCPA_MSGBYTES];
   uint8_t ct[KYBER_INDCPA_BYTES];
   uint8_t coins[KYBER_SYMBYTES];
@@ -82,10 +87,39 @@ static int probe_single_secret_coefficient(void) {
   return 0;
 }
 
+/**
+ * key-recovery plaintext-checking attack against random IND-CPA key pairs
+ */
+static int kr_pca(void) {
+  uint8_t pk[KYBER_INDCPA_PUBLICKEYBYTES];
+  uint8_t sk[KYBER_INDCPA_SECRETKEYBYTES];
+  uint8_t coins[KYBER_SYMBYTES];
+  for (int round = 0; round < NTESTS; round++) {
+    randombytes(coins, KYBER_SYMBYTES);
+    indcpa_keypair_derand(pk, sk, coins);
+    polyvec skpv;
+    unpack_invntt_sk(&skpv, sk);
+    polyvec_montgomery_reduce(&skpv);
+    struct indcpa_oracle oracle;
+    memcpy(oracle.pk, pk, KYBER_INDCPA_PUBLICKEYBYTES);
+    memcpy(oracle.sk, sk, KYBER_INDCPA_SECRETKEYBYTES);
+
+    polyvec recovered_skpv;
+    recover_all_secrets(&recovered_skpv, &oracle);
+
+    if (polyveccmp(&recovered_skpv, &skpv)) {
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
 int main(void) {
   int fail = 0;
 
   fail |= probe_single_secret_coefficient();
+  fail |= kr_pca();
 
   if (fail) {
     return 1;
